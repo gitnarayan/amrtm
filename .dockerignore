@@ -1,0 +1,14 @@
+node_modules
+.git
+.env
+dist
+coverage
+.secrets
+.npm-cache
+.tools
+.video-frames
+demo-output
+docs
+infra
+.github
+load

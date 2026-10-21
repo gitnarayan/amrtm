@@ -1,0 +1,33 @@
+groups:
+  - name: amrutam-slo
+    rules:
+      - alert: OutboxBacklog
+        expr: outbox_oldest_age_seconds > 60
+        for: 5m
+        labels: {severity: warning}
+        annotations: {summary: "Worker processing delayed; inspect worker logs and database locks"}
+      - alert: DeadLetterJob
+        expr: outbox_dead > 0
+        for: 1m
+        labels: {severity: critical}
+        annotations: {summary: "Outbox contains dead letters; repair handler before controlled replay"}
+      - alert: ApiDown
+        expr: up{job="amrutam"} == 0
+        for: 1m
+        labels: {severity: critical}
+        annotations: {summary: "API scrape failing; check readiness, database and metrics credentials"}
+      - alert: FastErrorBudgetBurn
+        expr: sum(rate(http_requests_total{status=~"5..",route!~"/health/.*|/metrics"}[5m])) / clamp_min(sum(rate(http_requests_total{route!~"/health/.*|/metrics"}[5m])), 0.001) > 0.0072
+        for: 5m
+        labels: {severity: critical}
+        annotations: {summary: "5xx ratio exceeds 14.4 times the 99.95% error budget"}
+      - alert: ReadLatency
+        expr: histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{method="GET",route!~"/health/.*|/metrics"}[5m]))) > 0.2
+        for: 10m
+        labels: {severity: warning}
+        annotations: {summary: "Read p95 exceeds 200ms"}
+      - alert: WriteLatency
+        expr: histogram_quantile(0.95, sum by (le) (rate(http_request_duration_seconds_bucket{method=~"POST|PATCH",route!~"/v1/auth/.*"}[5m]))) > 0.5
+        for: 10m
+        labels: {severity: warning}
+        annotations: {summary: "Domain write p95 exceeds 500ms"}

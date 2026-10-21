@@ -1,0 +1,7 @@
+{
+  "durationSeconds": 300,
+  "scenes": 10,
+  "format": "1600x900 H.264, 10fps",
+  "audio": false,
+  "description": "Captioned evidence walkthrough, not a screen recording of deployed infrastructure"
+}

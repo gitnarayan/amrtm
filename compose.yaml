@@ -1,0 +1,78 @@
+services:
+  postgres:
+    image: postgres:17-bookworm
+    environment:
+      POSTGRES_USER: amrutam
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run node scripts/dev-env.mjs}
+      POSTGRES_DB: amrutam
+    ports: ["127.0.0.1:5432:5432"]
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U amrutam -d amrutam"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  migrate:
+    build: .
+    env_file: .env
+    environment:
+      DATABASE_URL: postgres://amrutam:${POSTGRES_PASSWORD}@postgres:5432/amrutam
+    command: ["node", "dist/scripts/migrate.js"]
+    depends_on:
+      postgres: {condition: service_healthy}
+  api:
+    build: .
+    env_file: .env
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgres://amrutam:${POSTGRES_PASSWORD}@postgres:5432/amrutam
+      OTEL_SERVICE_NAME: amrutam-api
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel:4318
+      OTEL_TRACES_SAMPLER: parentbased_traceidratio
+      OTEL_TRACES_SAMPLER_ARG: "0.1"
+    ports: ["127.0.0.1:3000:3000"]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    init: true
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+  worker:
+    build: .
+    env_file: .env
+    environment:
+      NODE_ENV: development
+      DATABASE_URL: postgres://amrutam:${POSTGRES_PASSWORD}@postgres:5432/amrutam
+    command: ["node", "dist/src/worker-main.js"]
+    read_only: true
+    cap_drop: [ALL]
+    init: true
+    depends_on:
+      migrate: {condition: service_completed_successfully}
+  otel:
+    image: otel/opentelemetry-collector-contrib:0.123.0
+    command: ["--config=/etc/otel/config.yaml"]
+    volumes: ["./infra/observability/otel.yaml:/etc/otel/config.yaml:ro"]
+  prometheus:
+    image: prom/prometheus:v3.2.1
+    volumes:
+      - ./infra/observability/prometheus.yaml:/etc/prometheus/prometheus.yml:ro
+      - ./infra/observability/alerts.yaml:/etc/prometheus/alerts.yaml:ro
+    secrets: [metrics_token]
+    ports: ["127.0.0.1:9090:9090"]
+  grafana:
+    image: grafana/grafana:11.6.0
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?Run node scripts/dev-env.mjs}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes: ["./infra/observability/grafana:/etc/grafana/provisioning:ro"]
+    ports: ["127.0.0.1:3001:3000"]
+  tempo:
+    image: grafana/tempo:2.7.2
+    command: ["-config.file=/etc/tempo.yaml"]
+    volumes: ["./infra/observability/tempo.yaml:/etc/tempo.yaml:ro"]
+volumes:
+  pgdata:
+secrets:
+  metrics_token:
+    file: .secrets/metrics_token

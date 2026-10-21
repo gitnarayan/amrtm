@@ -1,0 +1,12 @@
+node_modules/
+.npm-cache/
+.tools/
+.video-frames/
+dist/
+.env
+.secrets/
+coverage/
+*.log
+*.tfstate*
+.terraform/
+demo-output/

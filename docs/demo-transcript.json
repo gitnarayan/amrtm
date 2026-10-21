@@ -1,0 +1,281 @@
+{
+  "environment": "isolated PGlite; synthetic doctor/admin sessions are pre-provisioned fixtures",
+  "steps": [
+    {
+      "label": "Patient registration",
+      "method": "POST",
+      "url": "/v1/auth/register",
+      "status": 201,
+      "response": {
+        "token": "[REDACTED]",
+        "kind": "enroll",
+        "expiresIn": 600,
+        "userId": "b1373936-6ddc-464c-aae4-1bad6be6820e"
+      }
+    },
+    {
+      "label": "Enrollment token cannot access clinical API",
+      "method": "GET",
+      "url": "/v1/doctors",
+      "status": 401,
+      "response": {
+        "error": "unauthorized",
+        "requestId": "req-2"
+      }
+    },
+    {
+      "label": "Enroll authenticator",
+      "method": "POST",
+      "url": "/v1/auth/mfa/enroll",
+      "status": 200,
+      "response": {
+        "secret": "[REDACTED]",
+        "uri": "[REDACTED]"
+      }
+    },
+    {
+      "label": "Verify MFA",
+      "method": "POST",
+      "url": "/v1/auth/mfa/verify",
+      "status": 200,
+      "response": {
+        "token": "[REDACTED]",
+        "kind": "access",
+        "expiresIn": 900
+      }
+    },
+    {
+      "label": "Doctor publishes availability",
+      "method": "POST",
+      "url": "/v1/slots",
+      "status": 201,
+      "response": {
+        "id": "8614b6f4-c80e-4ed5-832d-a56993664924"
+      }
+    },
+    {
+      "label": "Search doctors",
+      "method": "GET",
+      "url": "/v1/doctors?specialty=Ayurveda",
+      "status": 200,
+      "response": {
+        "items": [
+          {
+            "id": "b2082066-192b-4dca-86d5-7735fdc818fd",
+            "display_name": "Dr Synthetic",
+            "specialty": "Ayurveda",
+            "languages": [
+              "English"
+            ],
+            "fee_paise": 50000,
+            "verified": true
+          }
+        ],
+        "nextCursor": null
+      }
+    },
+    {
+      "label": "Book consultation",
+      "method": "POST",
+      "url": "/v1/consultations",
+      "status": 201,
+      "response": {
+        "id": "8045c608-8bfe-4b7c-8697-bc4a536263a1",
+        "status": "booked",
+        "paymentStatus": "not_collected"
+      }
+    },
+    {
+      "label": "Retry returns identical booking",
+      "method": "POST",
+      "url": "/v1/consultations",
+      "status": 201,
+      "response": {
+        "id": "8045c608-8bfe-4b7c-8697-bc4a536263a1",
+        "status": "booked",
+        "paymentStatus": "not_collected"
+      }
+    },
+    {
+      "label": "Competing patient cannot double-book",
+      "method": "POST",
+      "url": "/v1/consultations",
+      "status": 409,
+      "response": {
+        "error": "conflict",
+        "requestId": "req-9"
+      }
+    },
+    {
+      "label": "Other patient cannot read record",
+      "method": "GET",
+      "url": "/v1/consultations/8045c608-8bfe-4b7c-8697-bc4a536263a1",
+      "status": 404,
+      "response": {
+        "error": "not_found",
+        "requestId": "req-a"
+      }
+    },
+    {
+      "label": "Doctor starts consultation",
+      "method": "PATCH",
+      "url": "/v1/consultations/8045c608-8bfe-4b7c-8697-bc4a536263a1/status",
+      "status": 200,
+      "response": {
+        "id": "8045c608-8bfe-4b7c-8697-bc4a536263a1",
+        "status": "in_progress"
+      }
+    },
+    {
+      "label": "Doctor issues prescription",
+      "method": "POST",
+      "url": "/v1/consultations/8045c608-8bfe-4b7c-8697-bc4a536263a1/prescriptions",
+      "status": 201,
+      "response": {
+        "id": "d87ddd51-dd6d-46ac-a139-629f8448b5ca"
+      }
+    },
+    {
+      "label": "Doctor completes consultation",
+      "method": "PATCH",
+      "url": "/v1/consultations/8045c608-8bfe-4b7c-8697-bc4a536263a1/status",
+      "status": 200,
+      "response": {
+        "id": "8045c608-8bfe-4b7c-8697-bc4a536263a1",
+        "status": "completed"
+      }
+    },
+    {
+      "label": "Patient reads own prescription",
+      "method": "GET",
+      "url": "/v1/consultations/8045c608-8bfe-4b7c-8697-bc4a536263a1",
+      "status": 200,
+      "response": {
+        "id": "8045c608-8bfe-4b7c-8697-bc4a536263a1",
+        "patient_id": "b1373936-6ddc-464c-aae4-1bad6be6820e",
+        "doctor_id": "b2082066-192b-4dca-86d5-7735fdc818fd",
+        "slot_id": "8614b6f4-c80e-4ed5-832d-a56993664924",
+        "status": "completed",
+        "created_at": "2026-10-21T04:58:06.325Z",
+        "updated_at": "2026-10-21T04:58:06.355Z",
+        "prescriptions": [
+          {
+            "id": "d87ddd51-dd6d-46ac-a139-629f8448b5ca",
+            "createdAt": "2026-10-21T04:58:06.350Z",
+            "medications": [
+              {
+                "name": "Synthetic example only",
+                "dosage": "Not medical advice",
+                "instructions": "Demo fixture",
+                "durationDays": 1
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "label": "Worker drains transactional outbox",
+      "processed": 3
+    },
+    {
+      "label": "Admin analytics",
+      "method": "GET",
+      "url": "/v1/admin/analytics?from=2026-10-21&to=2026-10-21",
+      "status": 200,
+      "response": {
+        "items": [
+          {
+            "day": "2026-10-21T00:00:00.000Z",
+            "booked": "0",
+            "completed": "1",
+            "cancelled": "0",
+            "refreshed_at": "2026-10-21T04:58:06.373Z"
+          }
+        ]
+      }
+    },
+    {
+      "label": "Admin audit metadata",
+      "method": "GET",
+      "url": "/v1/admin/audit?limit=10",
+      "status": 200,
+      "response": {
+        "items": [
+          {
+            "id": "9108f137-ee9f-4cf4-99bd-d725edb64ce0",
+            "actor_id": "b1373936-6ddc-464c-aae4-1bad6be6820e",
+            "action": "user.registered",
+            "resource_id": "b1373936-6ddc-464c-aae4-1bad6be6820e",
+            "request_id": "req-1",
+            "created_at": "2026-10-21T04:58:06.083Z"
+          },
+          {
+            "id": "85882a33-a191-4cd1-96ac-a2e0d70b5a19",
+            "actor_id": "b1373936-6ddc-464c-aae4-1bad6be6820e",
+            "action": "auth.mfa_enrollment",
+            "resource_id": "b1373936-6ddc-464c-aae4-1bad6be6820e",
+            "request_id": "req-3",
+            "created_at": "2026-10-21T04:58:06.304Z"
+          },
+          {
+            "id": "25f1a7e2-8d3c-49e7-9af7-b1ff5936352e",
+            "actor_id": "b1373936-6ddc-464c-aae4-1bad6be6820e",
+            "action": "auth.mfa_verified",
+            "resource_id": "b1373936-6ddc-464c-aae4-1bad6be6820e",
+            "request_id": "req-4",
+            "created_at": "2026-10-21T04:58:06.311Z"
+          },
+          {
+            "id": "51800037-de24-4243-9d95-99650344e480",
+            "actor_id": "b2082066-192b-4dca-86d5-7735fdc818fd",
+            "action": "slot.created",
+            "resource_id": "8614b6f4-c80e-4ed5-832d-a56993664924",
+            "request_id": "req-5",
+            "created_at": "2026-10-21T04:58:06.317Z"
+          },
+          {
+            "id": "2f21299b-33b3-444b-a75c-7eb78f26377d",
+            "actor_id": "b1373936-6ddc-464c-aae4-1bad6be6820e",
+            "action": "consultation.booked",
+            "resource_id": "8045c608-8bfe-4b7c-8697-bc4a536263a1",
+            "request_id": "req-7",
+            "created_at": "2026-10-21T04:58:06.325Z"
+          },
+          {
+            "id": "2bd521c8-b9e4-4e12-9a1a-923f7fa2bc46",
+            "actor_id": "b2082066-192b-4dca-86d5-7735fdc818fd",
+            "action": "consultation.in_progress",
+            "resource_id": "8045c608-8bfe-4b7c-8697-bc4a536263a1",
+            "request_id": "req-b",
+            "created_at": "2026-10-21T04:58:06.344Z"
+          },
+          {
+            "id": "06b652de-7730-4b30-b916-d8a8160f8f7d",
+            "actor_id": "b2082066-192b-4dca-86d5-7735fdc818fd",
+            "action": "prescription.issued",
+            "resource_id": "d87ddd51-dd6d-46ac-a139-629f8448b5ca",
+            "request_id": "req-c",
+            "created_at": "2026-10-21T04:58:06.350Z"
+          },
+          {
+            "id": "fc397cdb-e7a2-427e-a1c4-41fc207b7ae9",
+            "actor_id": "b2082066-192b-4dca-86d5-7735fdc818fd",
+            "action": "consultation.completed",
+            "resource_id": "8045c608-8bfe-4b7c-8697-bc4a536263a1",
+            "request_id": "req-d",
+            "created_at": "2026-10-21T04:58:06.355Z"
+          },
+          {
+            "id": "48a90011-4a14-4bcb-ae87-3f3c395dc710",
+            "actor_id": "b1373936-6ddc-464c-aae4-1bad6be6820e",
+            "action": "consultation.read",
+            "resource_id": "8045c608-8bfe-4b7c-8697-bc4a536263a1",
+            "request_id": "req-e",
+            "created_at": "2026-10-21T04:58:06.361Z"
+          }
+        ]
+      }
+    }
+  ]
+}

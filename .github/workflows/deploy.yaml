@@ -1,0 +1,27 @@
+name: Deploy approved image
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: 'Full ghcr.io image reference pinned to sha256 digest from verified build'
+        required: true
+permissions: {contents: read, id-token: write}
+jobs:
+  deploy:
+    environment: production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: '${{ vars.DEPLOY_ROLE_ARN }}'
+          aws-region: ap-south-1
+      - env: {CLUSTER: '${{ vars.EKS_CLUSTER }}', IMAGE: '${{ inputs.image }}'}
+        run: |
+          [[ "$IMAGE" =~ ^ghcr.io/[a-z0-9_./-]+@sha256:[a-f0-9]{64}$ ]] || exit 1
+          aws eks update-kubeconfig --name "$CLUSTER"
+          # Migrations run separately with the owner identity before this workflow.
+          kubectl -n amrutam set image deployment/api api="$IMAGE"
+          kubectl -n amrutam rollout status deployment/api --timeout=180s
+          kubectl -n amrutam set image deployment/worker worker="$IMAGE"
+          kubectl -n amrutam rollout status deployment/worker --timeout=180s

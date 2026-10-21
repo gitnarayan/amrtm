@@ -1,0 +1,9 @@
+node_modules
+dist
+.tools
+.npm-cache
+.video-frames
+demo-output
+docs/openapi.json
+docs/demo-transcript.json
+package-lock.json

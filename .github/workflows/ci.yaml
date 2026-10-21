@@ -1,0 +1,56 @@
+name: Verify and package
+on: [push, pull_request]
+permissions: {contents: read}
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-bookworm
+        env: {POSTGRES_USER: test, POSTGRES_PASSWORD: test, POSTGRES_DB: amrutam_test}
+        ports: [5432:5432]
+        options: --health-cmd "pg_isready -U test -d amrutam_test" --health-interval 5s --health-timeout 3s --health-retries 20
+    env:
+      TEST_DATABASE_URL: postgres://test:test@localhost:5432/amrutam_test
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '24', cache: npm}
+      - run: npm ci
+      - run: npm run check
+      - run: npm run format:check
+      - run: npm test
+      - run: npm run build
+      - run: npm run schema && git diff --exit-code docs/openapi.json
+      - run: npm audit --audit-level=high
+      - run: docker build -t amrutam-api:ci .
+      - uses: aquasecurity/trivy-action@0.30.0
+        with:
+          image-ref: amrutam-api:ci
+          severity: HIGH,CRITICAL
+          exit-code: '1'
+          ignore-unfixed: true
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform -chdir=infra/terraform init -backend=false
+      - run: terraform -chdir=infra/terraform validate
+      - run: node scripts/dev-env.mjs && docker compose config --quiet
+      - uses: actions/upload-artifact@v4
+        with: {name: api-schema, path: docs/openapi.json}
+  publish:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: verify
+    runs-on: ubuntu-latest
+    permissions: {contents: read, packages: write}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/login-action@v3
+        with: {registry: ghcr.io, username: '${{ github.actor }}', password: '${{ secrets.GITHUB_TOKEN }}'}
+      - id: image
+        run: echo "name=ghcr.io/${GITHUB_REPOSITORY,,}" >> "$GITHUB_OUTPUT"
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: '${{ steps.image.outputs.name }}:${{ github.sha }}'
+          sbom: true
+          provenance: true
