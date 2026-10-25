@@ -20,6 +20,8 @@ jobs:
       - run: npm run check
       - run: npm run format:check
       - run: npm test
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
       - run: npm run build
       - run: npm run schema && git diff --exit-code docs/openapi.json
       - run: npm audit --audit-level=high

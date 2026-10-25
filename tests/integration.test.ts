@@ -63,6 +63,28 @@ afterAll(async () => {
   await db?.close();
 });
 describe("API and database integration", () => {
+  it("serves the care portal with CSP while keeping private files and APIs protected", async () => {
+    const home = await app.inject("/");
+    expect(home.statusCode).toBe(200);
+    expect(home.headers["content-type"]).toContain("text/html");
+    expect(home.headers["content-security-policy"]).toContain(
+      "script-src 'self'",
+    );
+    expect(home.headers["content-security-policy"]).not.toContain(
+      "unsafe-inline",
+    );
+    expect(home.headers["cache-control"]).toBe("no-store");
+    expect(
+      (await app.inject("/assets/app.js")).headers["content-type"],
+    ).toContain("javascript");
+    expect(
+      (await app.inject("/assets/app.css")).headers["content-type"],
+    ).toContain("text/css");
+    expect((await app.inject("/.env")).statusCode).toBe(404);
+    expect((await app.inject("/src/config.ts")).statusCode).toBe(404);
+    expect((await app.inject("/v1/me")).statusCode).toBe(401);
+  });
+
   it("never persists a fast unkeyed fingerprint of credential payloads", async () => {
     const key = randomUUID();
     const request = { password: "Sensitive credential" };

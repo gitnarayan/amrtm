@@ -27,3 +27,11 @@ Required release measurements:
 | Security | Negative tests plus independent penetration and clinical compliance review |
 
 Known scope limits: no real payment capture/refund, video room provider, notifications, self-service password/MFA recovery, off-host immutable audit export or patient data-export workflow. Terraform requires an existing VPC; Kubernetes requires an existing cluster/controllers/secrets. Monthly partitioning, read replicas and Redis caching are documented scale paths rather than active components.
+
+## Frontend verification — 2026-10-25
+
+The built-in care portal covers registration/login/MFA, patient directory and bookings, doctor availability and prescriptions, admin access management/analytics/audit, profile editing and logout. Local validation passed 21 backend/security tests, TypeScript/build, JavaScript syntax and formatting checks. OpenAPI remained unchanged because static routes are hidden from the API contract.
+
+A Playwright browser workflow passed against an isolated PGlite database in Edge and bundled Chromium. It performs real API requests across all three roles, checks mobile overflow, patient prescription visibility, analytics, audit and logout. The Chromium run also drops the first successful booking response and retries: both attempts use the same idempotency key and exactly one consultation exists. Tokens are not written to localStorage or sessionStorage. Browser tests are now included in CI against the disposable PostgreSQL service.
+
+Before the frontend change, GitHub run 40205163169 passed all verification and published the image, including real PostgreSQL integration tests, npm audit, Trivy, Terraform validation and Compose configuration validation. This supersedes the earlier unverified CI/image statements. It does not establish live deployment, load targets, availability or recovery objectives.

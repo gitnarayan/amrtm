@@ -1,3 +1,4 @@
+import { registerFrontend } from "./frontend.js";
 import { registerConsultations } from "./modules/consultations.js";
 import { registerDirectory } from "./modules/directory.js";
 import { registerAuth } from "./modules/auth.js";
@@ -333,6 +334,7 @@ export async function buildApp(db: Database, c: Config, logging = true) {
       });
     },
   });
+  await registerFrontend(app);
   app.addHook("onClose", async () => {
     registry.clear();
   });

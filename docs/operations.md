@@ -16,7 +16,7 @@ GitHub deployment requires `DEPLOY_ROLE_ARN` and `EKS_CLUSTER` environment varia
 
 Grafana provisions request-rate, latency and 5xx panels, plus Prometheus/Tempo data sources. Add alerts to an owned paging destination; this repository does not send messages. Check read p95 <200ms, domain write p95 <500ms, 5xx budget burn, outbox oldest age, dead letters, DB connections/CPU/storage/replica failover and backup freshness. Password-auth latency is separately budgeted because memory-hard hashing is deliberate. Measure end-to-end latency externally; API histograms do not include load-balancer/network time.
 
-Logs are JSON stdout for the platform collector. Retain searchable operational logs for the approved period; do not enable request-body/debug SQL logs. Route labels are templates, preventing unbounded cardinality. Trace sampling defaults to 10% in deployment manifests. Validate collector privacy filtering with synthetic secrets before enabling new instrumentations. Prometheus `/metrics` requires `METRICS_TOKEN`; production ingress exposes only `/v1`.
+Logs are JSON stdout for the platform collector. Retain searchable operational logs for the approved period; do not enable request-body/debug SQL logs. Route labels are templates, preventing unbounded cardinality. Trace sampling defaults to 10% in deployment manifests. Validate collector privacy filtering with synthetic secrets before enabling new instrumentations. Prometheus `/metrics` requires `METRICS_TOKEN`; production ingress exposes `/v1` and the exact frontend homepage/asset routes.
 
 ## Incident playbooks
 

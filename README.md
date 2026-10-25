@@ -90,3 +90,7 @@ Use [architecture](docs/architecture.md), [operations](docs/operations.md), [thr
 Supply `DATABASE_URL` (runtime login, `sslmode=verify-full` and trusted RDS CA), `DATA_KEYS` (JSON keyring of base64 32-byte keys), `ACTIVE_DATA_KEY`, `TOKEN_PEPPER`, `METRICS_TOKEN` through the secret manager. Use a separate `MIGRATION_DATABASE_URL` for schema changes. Never commit secrets or Terraform state. Set DNS/TLS, actual DB subnet CIDR, namespace networking, secret `amrutam-runtime`, and immutable image digest before applying Kubernetes manifests.
 
 The deployment workflow requires configured AWS OIDC trust, an existing EKS cluster, environment protection and scoped RBAC. It updates existing deployments; it does not silently provision cloud resources. No infrastructure has been applied by this project setup.
+
+## Web care portal
+
+Open http://localhost:3001 after starting the backend with PORT=3001. The built-in portal supports patient, doctor and admin workflows, including MFA. See [frontend setup and walkthrough](docs/frontend.md).

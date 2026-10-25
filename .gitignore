@@ -10,3 +10,6 @@ coverage/
 *.tfstate*
 .terraform/
 demo-output/
+
+test-results/
+playwright-report/
