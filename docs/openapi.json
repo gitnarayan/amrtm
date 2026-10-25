@@ -2513,7 +2513,8 @@
                         "additionalProperties": false,
                         "properties": {
                           "day": {
-                            "type": "string"
+                            "type": "string",
+                            "format": "date"
                           },
                           "booked": {
                             "type": "string"

@@ -1,0 +1,29 @@
+{
+  "operations": [
+    "GET /health/live",
+    "GET /health/ready",
+    "GET /metrics",
+    "POST /v1/auth/register",
+    "POST /v1/auth/login",
+    "POST /v1/auth/mfa/enroll",
+    "POST /v1/auth/mfa/verify",
+    "POST /v1/auth/logout",
+    "GET /v1/me",
+    "PATCH /v1/me",
+    "PATCH /v1/admin/users/{id}",
+    "POST /v1/admin/doctors",
+    "GET /v1/doctors",
+    "POST /v1/slots",
+    "GET /v1/doctors/{id}/slots",
+    "POST /v1/consultations",
+    "GET /v1/consultations",
+    "GET /v1/consultations/{id}",
+    "PATCH /v1/consultations/{id}/status",
+    "POST /v1/consultations/{id}/prescriptions",
+    "GET /v1/admin/analytics",
+    "GET /v1/admin/audit"
+  ],
+  "operationCount": 22,
+  "requestCount": 27,
+  "validation": "All OpenAPI operations represented; JSON and script syntax checked. Live API not executed."
+}

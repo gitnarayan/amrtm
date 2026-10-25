@@ -6,6 +6,14 @@ The default integration suite uses PGlite, an embedded PostgreSQL engine. It val
 
 Local results (21 October 2026): TypeScript strict build/check passed; 19 tests passed across two source test files; the synthetic end-to-end demo passed; 11 YAML files parsed; npm audit reported zero known vulnerabilities. OpenAPI was generated from registered routes. A 300-second silent captioned MP4 was rendered and a representative frame visually checked. Docker builds, real-server PostgreSQL concurrency, Terraform/provider validation, Kubernetes deployment, image scanning and remote CI were not run locally. Their workflows/configuration are supplied. Do not interpret tests as a load test, SLA, security certification, or a successful infrastructure deployment.
 
+## Local verification update ? 25 October 2026
+
+The user reran all final local checks: 20 tests passed across two files; TypeScript build, type checking and formatting checks passed. The additional regression test covers UTC analytics day boundaries under Asia/Calcutta, America/New_York and UTC database sessions.
+
+User-supplied Postman responses confirmed patient and admin MFA, role-protected profiles, doctor registration/promotion/verification, doctor MFA, availability publication, patient booking, consultation start, prescription issuance, completion, and patient retrieval of the completed record. Admin analytics correctly reports one completed consultation for 2026-10-25 after the timezone fix. The returned audit trail includes the corresponding lifecycle events. A patient request to the admin audit endpoint was rejected with forbidden.
+
+PostgreSQL 17 is now installed and used by the local running API. The automated suite above still uses embedded PGlite by default; live manual checks do not establish real-server parallel concurrency coverage. Cancellation, sequential idempotency replay, admin clinical-record rejection, Docker/image execution, remote CI, load/SLA, and restore/failover results have not yet been supplied as completed submission evidence. Earlier environment/tool availability statements describe the initial implementation session.
+
 Required release measurements:
 
 | Requirement | Evidence required |

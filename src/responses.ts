@@ -84,7 +84,7 @@ export function successSchema(method: string, path: string): any {
   if (path === "/v1/admin/analytics")
     return list(
       obj({
-        day: { type: "string" },
+        day: { type: "string", format: "date" },
         booked: { type: "string" },
         completed: { type: "string" },
         cancelled: { type: "string" },

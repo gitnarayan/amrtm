@@ -26,7 +26,7 @@ export async function processOne(
         `analytics:${source.day}`,
       ]);
       await tx.query(
-        `INSERT INTO daily_analytics(day,booked,completed,cancelled) SELECT $1::date,count(*) FILTER(WHERE status IN ('booked','in_progress')),count(*) FILTER(WHERE status='completed'),count(*) FILTER(WHERE status='cancelled') FROM consultations WHERE created_at >= $1::date AT TIME ZONE 'UTC' AND created_at < ($1::date+1) AT TIME ZONE 'UTC' ON CONFLICT(day) DO UPDATE SET booked=EXCLUDED.booked,completed=EXCLUDED.completed,cancelled=EXCLUDED.cancelled,refreshed_at=now()`,
+        `INSERT INTO daily_analytics(day,booked,completed,cancelled) SELECT $1::date,count(*) FILTER(WHERE status IN ('booked','in_progress')),count(*) FILTER(WHERE status='completed'),count(*) FILTER(WHERE status='cancelled') FROM consultations WHERE created_at >= $1::date::timestamp AT TIME ZONE 'UTC' AND created_at < ($1::date+1)::timestamp AT TIME ZONE 'UTC' ON CONFLICT(day) DO UPDATE SET booked=EXCLUDED.booked,completed=EXCLUDED.completed,cancelled=EXCLUDED.cancelled,refreshed_at=now()`,
         [source.day],
       );
       await tx.query(

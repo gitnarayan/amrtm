@@ -348,6 +348,59 @@ describe("API and database integration", () => {
       ).statusCode,
     ).toBe(403);
   });
+  it("aggregates UTC days independently of database timezone and returns a date", async () => {
+    const timestamps = [
+      "2020-01-01T23:59:59Z",
+      "2020-01-02T00:00:00Z",
+      "2020-01-02T23:59:59Z",
+      "2020-01-03T00:00:00Z",
+    ];
+    const consultationIds: string[] = [];
+    for (let i = 0; i < timestamps.length; i++) {
+      const slotId = randomUUID(),
+        id = randomUUID();
+      const start = new Date(Date.UTC(2035, 0, 1, i));
+      await db.query(
+        "INSERT INTO availability_slots(id,doctor_id,starts_at,ends_at) VALUES($1,$2,$3,$4)",
+        [slotId, ids.doctor, start, new Date(start.getTime() + 1800000)],
+      );
+      await db.query(
+        "INSERT INTO consultations(id,patient_id,doctor_id,slot_id,status,created_at) VALUES($1,$2,$3,$4,'completed',$5)",
+        [id, ids.patient, ids.doctor, slotId, timestamps[i]],
+      );
+      consultationIds.push(id);
+    }
+    for (const zone of ["Asia/Calcutta", "America/New_York", "UTC"]) {
+      await db.query(
+        "INSERT INTO outbox(id,topic,aggregate_id) VALUES($1,'consultation.changed',$2)",
+        [randomUUID(), consultationIds[1]],
+      );
+      const zonedDb: Database = {
+        query: db.query.bind(db),
+        close: async () => {},
+        transaction: (fn) =>
+          db.transaction(async (tx) => {
+            await tx.query("SELECT set_config('TimeZone',$1,true)", [zone]);
+            return fn(tx);
+          }),
+      };
+      while ((await processOne(zonedDb)) !== "idle") {}
+      const rows = (
+        await db.query(
+          "SELECT day::text,completed FROM daily_analytics WHERE day='2020-01-02'",
+        )
+      ).rows;
+      expect(rows[0]!.day).toBe("2020-01-02");
+      expect(Number(rows[0]!.completed)).toBe(2);
+    }
+    const response = await app.inject({
+      url: "/v1/admin/analytics?from=2020-01-02&to=2020-01-02",
+      headers: auth("admin"),
+    });
+    expect(response.statusCode).toBe(200);
+    expect(response.json().items[0].day).toBe("2020-01-02");
+    expect(Number(response.json().items[0].completed)).toBe(2);
+  });
   it("prevents updating or deleting audit evidence", async () => {
     await expect(
       db.query("UPDATE audit_logs SET action='tampered'"),

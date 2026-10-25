@@ -303,7 +303,7 @@ export async function buildApp(db: Database, c: Config, logging = true) {
         body: {
           items: (
             await tx.query(
-              "SELECT * FROM daily_analytics WHERE day BETWEEN $1 AND $2 ORDER BY day",
+              "SELECT day::text AS day,booked,completed,cancelled,refreshed_at FROM daily_analytics WHERE day BETWEEN $1 AND $2 ORDER BY day",
               [req.query.from, req.query.to],
             )
           ).rows,
