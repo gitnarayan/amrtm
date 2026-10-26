@@ -5,7 +5,7 @@ services:
       POSTGRES_USER: amrutam
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Run node scripts/dev-env.mjs}
       POSTGRES_DB: amrutam
-    ports: ["127.0.0.1:5432:5432"]
+    ports: ["127.0.0.1:5433:5432"]
     volumes: ["pgdata:/var/lib/postgresql/data"]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U amrutam -d amrutam"]
@@ -25,12 +25,13 @@ services:
     env_file: .env
     environment:
       NODE_ENV: development
+      PORT: "3000"
       DATABASE_URL: postgres://amrutam:${POSTGRES_PASSWORD}@postgres:5432/amrutam
       OTEL_SERVICE_NAME: amrutam-api
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel:4318
       OTEL_TRACES_SAMPLER: parentbased_traceidratio
       OTEL_TRACES_SAMPLER_ARG: "0.1"
-    ports: ["127.0.0.1:3000:3000"]
+    ports: ["127.0.0.1:3002:3000"]
     read_only: true
     cap_drop: [ALL]
     security_opt: ["no-new-privileges:true"]
@@ -66,7 +67,7 @@ services:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?Run node scripts/dev-env.mjs}
       GF_USERS_ALLOW_SIGN_UP: "false"
     volumes: ["./infra/observability/grafana:/etc/grafana/provisioning:ro"]
-    ports: ["127.0.0.1:3001:3000"]
+    ports: ["127.0.0.1:3003:3000"]
   tempo:
     image: grafana/tempo:2.7.2
     command: ["-config.file=/etc/tempo.yaml"]
